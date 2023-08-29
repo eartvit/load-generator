@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# For testing purposes
+# Ensure you have a podman network called `test` and that has DNS enabled. You can create one with `podman network create test`
+# Then deploy the wiremock-mlasp application as: `podman run -d --name wiremock-mlasp --net test -p 8080:8080 quay.io/avitui/wire_mock_mlasp_ocp:v1.1`
+# Then build the app as container in your local store using `podman build -t load-generaror -f Containerfile`.
+# Once the build is completed you can use the launcher script.
+
+podman rm load-generator > /dev/null 2>&1
+
+podman run -d --name load-generator --net test -e TRACEACTIVE='True' -e CONNECTIONS=2 -e DURATION=5 \
+            -e ENDPOINT=http://wiremock-metrics2:8080/mock \
+            -e OUTPUT='json' -e THREADSLEEPMS=50 -e STOPONERROR='False' -e RANDREQMODE='True' -e RANDPAYLOAD='False' \
+            -e REQPAYLOADS=3 -e PAYLOAD1="{'content':'50'}" -e PAYLOAD2="{'content':'150'}" -e PAYLOAD3="{'content':'255'}" \
+            localhost/load-generator:latest
