@@ -14,7 +14,7 @@ public class App
     public static void main( String[] args )
     {
 
-        String trace = System.getenv().getOrDefault("TRACEACTIVE", "False");
+        String trace = System.getenv().getOrDefault("TRACEACTIVE", "True");
         if (trace.equalsIgnoreCase("True")){
             App.TRACE = true;
             System.out.println("Hello world, tracing is active!");
@@ -32,12 +32,15 @@ public class App
         environment.put("RANDREQMODE", System.getenv().getOrDefault("RANDREQMODE", "False"));
         environment.put("HEADERS", System.getenv().getOrDefault("HEADERS", "{\"Authorization\":\"Bearer YourAccessToken\"}"));
         environment.put("RANDPAYLOAD", System.getenv().getOrDefault("RANDPAYLOAD", "True"));
-        environment.put("REQPAYLOADS", System.getenv().getOrDefault("REQPAYLOADS", "3"));
+        environment.put("REQPAYLOADS", System.getenv().getOrDefault("REQPAYLOADS", "4"));
         environment.put("TIMEOUTSECONDS", System.getenv().getOrDefault("TIMEOUTSECONDS", "2"));
 
         if (environment.get("RANDPAYLOAD").equalsIgnoreCase("True")) {
+            String payloadSizes = System.getenv().getOrDefault("PAYLOADSIZES", "50,150,250");
+            String[] payloadSizesArray = payloadSizes.split(",");
+            environment.put("REQPAYLOADS", String.valueOf(payloadSizesArray.length));
             for (int i =0; i< Integer.parseInt(environment.get("REQPAYLOADS")); i++ ){
-                environment.put("PAYLOADSIZE"+String.valueOf(i+1), System.getenv().getOrDefault("PAYLOADSIZE"+String.valueOf(i+1), "256"));
+                environment.put("PAYLOADSIZE"+String.valueOf(i+1), payloadSizesArray[i]);
             }
         }
         else {
