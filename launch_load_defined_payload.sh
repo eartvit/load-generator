@@ -2,7 +2,7 @@
 
 # For testing purposes
 # Ensure you have a podman network called `test` and that has DNS enabled. You can create one with `podman network create test`
-# Then deploy the wiremock-mlasp application as: `podman run -d --name wiremock-mlasp --net test -p 8080:8080 quay.io/avitui/wire_mock_mlasp_ocp:v1.1`
+# Then deploy the wiremock-metrics application as: `podman run -d --name wiremock-metrics2 --net test -p 8080:8080 quay.io/avitui/wiremock-metrics:v1`
 # Then build the app as container in your local store using `podman build -t load-generaror -f Containerfile`.
 # Once the build is completed you can use the launcher script.
 

@@ -21,15 +21,16 @@ ENV THREADSLEEPMS=50
 ENV RANDREQMODE="True"
 # Random payload. If not each payload must be provided as JSON value, e.g. ENV PAYLOAD[n]="{Content: Message}"
 ENV RANDPAYLOAD="True"
-# Number of request payloads
-ENV REQPAYLOADS=3
-# Provide either the payload sizes or actual payloads up to REQPAYLOADS based on the value of the RANDPAYLOAD field. 
-# If RANDPAYLOAD=True then PAYLOADSIZE[n] must be provided in char (bytes)
-ENV PAYLOADSIZE1=50
-ENV PAYLOADSIZE2=150
-ENV PAYLOADSIZE3=250
+# If RANDPAYLOAD=True then PAYLOADSIZES must be provided as comma separated values
+ENV PAYLOADSIZES="50,150,250"
+# Otherwise the payloads must be provided as JSON strings, e.g., ENV PAYLOAD[n]="{Content: Message}"
+# ENV PAYLOAD1="{Content: Message one}"
+# ENV PAYLOAD2="{Content: Message two}"
+# ENV PAYLOAD3="{Content: Message three}"
+# Number of request payloads must be provided if RANDPAYLOAD='False'
+# ENV REQPAYLOADS=3
 
-# Provide header for the HttpRequest towards the target endpoint.
+# Provide additional headers if needed for the HttpRequest towards the target endpoint.
 ENV HEADERS="{'Authorization': 'Bearer YourAccessToken'}"
 
 CMD java -jar load-generator-1.0-SNAPSHOT-jar-with-dependencies.jar
