@@ -23,20 +23,30 @@ public class App
         Map<String, String> environment = new HashMap<String, String>();
 
         environment.put("CONNECTIONS", System.getenv().getOrDefault("CONNECTIONS", "2"));
+        environment.put("TIMEOUTSECONDS", System.getenv().getOrDefault("TIMEOUTSECONDS", "2"));
         environment.put("DURATION", System.getenv().getOrDefault("DURATION", "5"));
-        //environment.put("ENDPOINT", System.getenv().getOrDefault("ENDPOINT", "http://wiremock.demo.apps.svc.local:8080/mock"));
         environment.put("ENDPOINT", System.getenv().getOrDefault("ENDPOINT", "http://localhost:8080/mock"));
+        environment.put("THREADSLEEPMS", System.getenv().getOrDefault("THREADSLEEPMS", "50"));
+        environment.put("HEADERS", System.getenv().getOrDefault("HEADERS", "{\"Authorization\":\"Bearer YourAccessToken\"}"));
+
         environment.put("OUTPUT", System.getenv().getOrDefault("OUTPUT", "json"));
         environment.put("STOPONERROR", System.getenv().getOrDefault("STOPONERROR", "False"));
-        environment.put("THREADSLEEPMS", System.getenv().getOrDefault("THREADSLEEPMS", "50"));
-        environment.put("RANDREQMODE", System.getenv().getOrDefault("RANDREQMODE", "False"));
-        environment.put("HEADERS", System.getenv().getOrDefault("HEADERS", "{\"Authorization\":\"Bearer YourAccessToken\"}"));
+
+        // Random sent payload generation 
         environment.put("RANDPAYLOAD", System.getenv().getOrDefault("RANDPAYLOAD", "True"));
-        environment.put("REQPAYLOADS", System.getenv().getOrDefault("REQPAYLOADS", "4"));
-        environment.put("TIMEOUTSECONDS", System.getenv().getOrDefault("TIMEOUTSECONDS", "2"));
+        // Random selection of payloads in the sent requests. Cyclic mode otherwise.
+        environment.put("RANDREQMODE", System.getenv().getOrDefault("RANDREQMODE", "False")); 
+        //Payload sizing factor controls the size of the sent data vs expected to receive back data
+        environment.put("LTREQPAYLOADSIZEFACTOR", System.getenv().getOrDefault("LTREQPAYLOADSIZEFACTOR", "10"));
 
         if (environment.get("RANDPAYLOAD").equalsIgnoreCase("True")) {
-            String payloadSizes = System.getenv().getOrDefault("PAYLOADSIZES", "50,150,250");
+            // Branch for sending randomly generated payload. 
+
+            // This control variable is for sending only ONE payload (same size) and expecting back random different payloads (sizes)                        
+            environment.put("LTREQFIRSTSIZEONLY", System.getenv().getOrDefault("LTREQFIRSTSIZEONLY", "False"));
+
+            // The list of EXPECTED back payload sizes. Sent payload is controlled with the LTREQPAYLOADSIZEFACTOR by dividing the value from the array with the factor.
+            String payloadSizes = System.getenv().getOrDefault("PAYLOADSIZES", "50,150,250");            
             String[] payloadSizesArray = payloadSizes.split(",");
             environment.put("REQPAYLOADS", String.valueOf(payloadSizesArray.length));
             for (int i =0; i< Integer.parseInt(environment.get("REQPAYLOADS")); i++ ){
@@ -44,6 +54,9 @@ public class App
             }
         }
         else {
+            // Branch for manually defined payloads to send
+            // LTREQPAYLOADSIZEFACTOR and LTREQFIRSTSIZEONLY are not used in this branch
+            environment.put("REQPAYLOADS", System.getenv().getOrDefault("REQPAYLOADS", "3"));
             for (int i =0; i< Integer.parseInt(environment.get("REQPAYLOADS")); i++ ){
                 environment.put("PAYLOAD"+String.valueOf(i+1), System.getenv().getOrDefault("PAYLOAD"+String.valueOf(i+1), "{\"content\":\"default\"}"));
             }
@@ -153,9 +166,11 @@ public class App
             System.out.println("ThreadSleepMS:" + String.valueOf(environment.get("THREADSLEEPMS")));
             System.out.println("RandomPayload:" + String.valueOf(environment.get("RANDPAYLOAD")));
             System.out.println("RequestPayloads:" + String.valueOf(environment.get("REQPAYLOADS")));
-            System.out.println("RandomRequestMode:" + String.valueOf(environment.get("RANDREQMODE")));
+            System.out.println("RandomRequestMode:" + String.valueOf(environment.get("RANDREQMODE")));            
 
             if (environment.get("RANDPAYLOAD").equalsIgnoreCase("True")) {
+                System.out.println("LTRequestPayloadSizeFactor:" + String.valueOf(environment.get("LTREQPAYLOADSIZEFACTOR")));
+                System.out.println("LTRequestFirstSizeOnly:" + String.valueOf(environment.get("LTREQFIRSTSIZEONLY")));
                 for (int i =0; i< Integer.parseInt(environment.get("REQPAYLOADS")); i++ ){
                     System.out.println("PayloadSize" + String.valueOf(i+1) + ": " + environment.get("PAYLOADSIZE"+String.valueOf(i+1)));
                 }
@@ -210,6 +225,8 @@ public class App
             loadTestParams.put("RequestPayloads", String.valueOf(environment.get("REQPAYLOADS")));
             loadTestParams.put("RandomRequestMode", String.valueOf(environment.get("RANDREQMODE")));
             if (environment.get("RANDPAYLOAD").equalsIgnoreCase("True")) {
+                loadTestParams.put("LTRequestPayloadSizeFactor", String.valueOf(environment.get("LTREQPAYLOADSIZEFACTOR")));
+                loadTestParams.put("LTRequestFirstSizeOnly", String.valueOf(environment.get("LTREQFIRSTSIZEONLY")));
                 for (int i =0; i< Integer.parseInt(environment.get("REQPAYLOADS")); i++ ){
                     String keyString = "PayloadSize" + String.valueOf(i+1);
                     loadTestParams.put(keyString, environment.get("PAYLOADSIZE"+String.valueOf((i+1))));

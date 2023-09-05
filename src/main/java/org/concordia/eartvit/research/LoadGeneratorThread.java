@@ -57,29 +57,51 @@ public class LoadGeneratorThread extends Thread {
         boolean stopOnError = Boolean.valueOf(envMap.get("STOPONERROR"));
 
         JSONObject headerObject = new JSONObject(envMap.get("HEADERS"));
-
+        /*
         if (App.TRACE) {
             System.out.println(
                     this.threadName + " JSON Header Object as Map as string: " + headerObject.toMap().toString());
             System.out.println(this.threadName + " JSON Header Object as string: " + headerObject.toString());
         }
-
+        */
         long i = 0;
         int j = 0;
 
         int reqPayloads = Integer.parseInt(envMap.get("REQPAYLOADS"));
         String[] messageBody = new String[reqPayloads];
+        int[] returnPayloadSizes = new int[reqPayloads];
+        int[] requestPayloadSizes = new int[reqPayloads];
 
         if (envMap.get("RANDPAYLOAD").equalsIgnoreCase("True")) {
+
+            int factor = Integer.parseInt(envMap.get("LTREQPAYLOADSIZEFACTOR"));
+            if (factor <= 0)
+                factor = 1;
+
             for (int idx = 0; idx < reqPayloads; idx++) {
                 Map<String, String> map = new HashMap<>();
-                map.put("content", RandomStringBuilder.getInstance()
-                        .generateRandomString(Integer.parseInt(envMap.get("PAYLOADSIZE" + (idx + 1)))));
+                
+                String payloadString = "";
+                
+                int crtPayloadSize = Integer.parseInt(envMap.get("PAYLOADSIZE" + (idx + 1)));
+                returnPayloadSizes[idx] = crtPayloadSize;
+                requestPayloadSizes[idx] = crtPayloadSize/factor;
+
+                if (envMap.get("LTREQFIRSTSIZEONLY").equalsIgnoreCase("True")){
+                    // We generate different strings of the same length
+                    payloadString = RandomStringBuilder.getInstance().generateRandomString(requestPayloadSizes[0]);
+                }
+                else{
+                    payloadString = RandomStringBuilder.getInstance().generateRandomString(requestPayloadSizes[idx]);
+                }
+                map.put("content", payloadString);
                 messageBody[idx] = new JSONObject(map).toString();
             }
         } else {
             for (int idx = 0; idx < reqPayloads; idx++) {
                 messageBody[idx] = new JSONObject(envMap.get("PAYLOAD" + (idx + 1))).toString();
+                requestPayloadSizes[idx] = messageBody[idx].length();
+                returnPayloadSizes[idx] = messageBody[idx].length();
             }
         }
 
@@ -93,8 +115,19 @@ public class LoadGeneratorThread extends Thread {
 
                     j = rand.nextInt(reqPayloads);
                 }
+                String uri = envMap.get("ENDPOINT") + "?id=" + String.valueOf(returnPayloadSizes[j]);
+                if (App.TRACE){
+                    System.out.println(this.threadName + " Next payload id is: " + j);
+                    if (envMap.get("LTREQFIRSTSIZEONLY").equalsIgnoreCase("True")){
+                        System.out.println(this.threadName + " Next request payload size is: " + requestPayloadSizes[0]);
+                    } else {
+                        System.out.println(this.threadName + " Next request payload size is: " + requestPayloadSizes[j]);
+                    }
+                    System.out.println(this.threadName + " The URI is: " + uri);
+                }
+                
                 HttpRequest request = HttpRequest.newBuilder()
-                        .uri(new URI(envMap.get("ENDPOINT")))
+                        .uri(new URI(uri))
                         .timeout(Duration.ofSeconds(timeoutSeconds))
                         .headers("Content-Type", "application/json")
                         .header("Custom-Headers", headerObject.toString())
@@ -102,7 +135,7 @@ public class LoadGeneratorThread extends Thread {
                         .build();
 
                 if (App.TRACE) {
-                    System.out.println(this.threadName + " The request is: " + request.toString());
+                    System.out.println(this.threadName + " The request is: " + request.toString());                    
                     System.out.println(this.threadName + " Having headers: " + request.headers().toString());
                     System.out.println(this.threadName + " And body as string: " + messageBody[j]);
                 }

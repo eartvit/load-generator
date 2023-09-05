@@ -11,5 +11,5 @@ podman rm load-generator > /dev/null 2>&1
 podman run -d --name load-generator --net test -e TRACEACTIVE='True' -e CONNECTIONS=2 -e DURATION=5 \
             -e ENDPOINT=http://wiremock-metrics2:8080/mock \
             -e OUTPUT='json' -e THREADSLEEPMS=50 -e STOPONERROR='False' -e RANDREQMODE='True' -e RANDPAYLOAD='True' \
-            -e PAYLOADSIZES='50,150,255' -e LTREQPAYLOADSIZEFACTOR=10 -e LTREQFIRSTSIZEONLY='False' \
+            -e PAYLOADSIZES='50,150,255' -e LTREQPAYLOADSIZEFACTOR=10 -e LTREQFIRSTSIZEONLY='True' \
             localhost/load-generator:latest

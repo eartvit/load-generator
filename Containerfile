@@ -30,6 +30,12 @@ ENV PAYLOADSIZES="50,150,250"
 # Number of request payloads must be provided if RANDPAYLOAD='False'
 # ENV REQPAYLOADS=3
 
+# If RANDOMPAYLOAD=True then LTREQPAYLOADSIZEFACTOR defines the ratio between the sent payload and the one expected to be received from the PAYLOADSIZES list.
+ENV LTREQPAYLOADSIZEFACTOR=10
+
+# If RANDOMPAYLOAD=True then LTREQFIRSTSIZEONLY defines if only one payload size to be used in the sent request for the list of expected PAYLOADSIZES to receive.
+ENV LTREQFIRSTSIZEONLY="False"
+
 # Provide additional headers if needed for the HttpRequest towards the target endpoint.
 ENV HEADERS="{'Authorization': 'Bearer YourAccessToken'}"
 
