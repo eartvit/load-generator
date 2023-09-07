@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.HashMap;
@@ -57,13 +58,7 @@ public class LoadGeneratorThread extends Thread {
         boolean stopOnError = Boolean.valueOf(envMap.get("STOPONERROR"));
 
         JSONObject headerObject = new JSONObject(envMap.get("HEADERS"));
-        /*
-        if (App.TRACE) {
-            System.out.println(
-                    this.threadName + " JSON Header Object as Map as string: " + headerObject.toMap().toString());
-            System.out.println(this.threadName + " JSON Header Object as string: " + headerObject.toString());
-        }
-        */
+
         long i = 0;
         int j = 0;
 
@@ -108,7 +103,7 @@ public class LoadGeneratorThread extends Thread {
         boolean randReqMode = Boolean.valueOf(envMap.get("RANDREQMODE")).booleanValue();
         Random rand = new Random();
 
-        while (System.currentTimeMillis() < end) {
+        while (System.currentTimeMillis() < end && !isCompleted) {
             try {
                 i++; //we increase the general counter here to compensate for STOPONERROR==True
                 if (randReqMode == true) {
@@ -204,24 +199,34 @@ public class LoadGeneratorThread extends Thread {
                             + Long.toString(i));
                     }
                     break; //we always stop on malformed URI
-                } else {
+                } else if (e instanceof HttpTimeoutException) {
                     numberOtherMessages += 1; //probably request timed out
                     if (App.TRACE){
                         e.printStackTrace();
                     }
                     if (stopOnError)
                         break;
-                }
+                } else {
+                    e.printStackTrace();
+                    isCompleted = true;
+                    break;
+                }                
             }
             try {
                 Thread.sleep(threadSleepMS);
-            } catch (InterruptedException e) {
-                if (stopOnError){
+            } catch (Exception e) {
+                if (e instanceof InterruptedException){
+                    if (stopOnError){
+                        break;
+                    }
+                    if (App.TRACE){
+                        System.out.println("Thread: " + threadName + "was interrupted by InterruptedException at iteration "
+                            + Long.toString(i));
+                    }
+                } else {
+                    e.printStackTrace();
+                    isCompleted = true;
                     break;
-                }
-                if (App.TRACE){
-                    System.out.println("Thread: " + threadName + "was interrupted by InterruptedException at iteration "
-                        + Long.toString(i));
                 }
             }
         }
@@ -233,6 +238,10 @@ public class LoadGeneratorThread extends Thread {
 
     public boolean isCompleted() {
         return isCompleted;
+    }
+
+    public void setCompleted(boolean flag){
+        isCompleted = flag;
     }
 
     public String getThreadName() {

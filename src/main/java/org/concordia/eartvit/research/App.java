@@ -92,7 +92,10 @@ public class App
             */
         }
         boolean allThreadsCompleted = false;
-        while (!allThreadsCompleted){
+        long now = System.currentTimeMillis();
+        int duration = Integer.valueOf(environment.get("DURATION"));
+        long end = now + 2000 * duration; //wait twice the duration then force exit
+        while (!allThreadsCompleted ){
             allThreadsCompleted = true;
             for (LoadGeneratorThread ldThread: threadList){
                 allThreadsCompleted = allThreadsCompleted && ldThread.isCompleted();
@@ -101,6 +104,12 @@ public class App
                 Thread.sleep(100);
             } catch (InterruptedException e){
                 e.printStackTrace();
+            }
+            if (System.currentTimeMillis() > end){
+                System.out.println("Forcing stop as time limit exceeds 2xDURATION.");
+                for (LoadGeneratorThread ldThread: threadList){
+                    ldThread.setCompleted(true);
+                }
             }
         }
         Date dateStop = new Date(System.currentTimeMillis()); 
@@ -183,16 +192,16 @@ public class App
             }
 
             for (LoadGeneratorThread ldThread: threadList){
-                System.out.println("Thread " + ldThread.getName() + ": Total number of messages sent " + ldThread.getNumberOfMessages());
-                System.out.println("Thread " + ldThread.getName() + " Total number of 1xx responses: " + ldThread.getNumber1xxMessages());
-                System.out.println("Thread " + ldThread.getName() + " Total number of 2xx responses: " + ldThread.getNumber2xxMessages());
-                System.out.println("Thread " + ldThread.getName() + " Total number of 3xx responses: " + ldThread.getNumber3xxMessages());
-                System.out.println("Thread " + ldThread.getName() + " Total number of 4xx responses: " + ldThread.getNumber4xxMessages());
-                System.out.println("Thread " + ldThread.getName() + " Total number of 5xx responses: " + ldThread.getNumber5xxMessages());
-                System.out.println("Thread " + ldThread.getName() + " Total number of other responses: " + ldThread.getNumberOtherMessages());
-                System.out.println("Thread " + ldThread.getName() + " Minimum latency MS (rounded): " + ldThread.getMinLatencyMS());
-                System.out.println("Thread " + ldThread.getName() + " Maximum latency MS (rounded): " + ldThread.getMaxLatencyMS());
-                System.out.println("Thread " + ldThread.getName() + " Average latency MS (rounded): " + ldThread.getAvgLatencyMS());
+                System.out.println("Thread " + ldThread.getThreadName() + ": Total number of messages sent " + ldThread.getNumberOfMessages());
+                System.out.println("Thread " + ldThread.getThreadName() + " Total number of 1xx responses: " + ldThread.getNumber1xxMessages());
+                System.out.println("Thread " + ldThread.getThreadName() + " Total number of 2xx responses: " + ldThread.getNumber2xxMessages());
+                System.out.println("Thread " + ldThread.getThreadName() + " Total number of 3xx responses: " + ldThread.getNumber3xxMessages());
+                System.out.println("Thread " + ldThread.getThreadName() + " Total number of 4xx responses: " + ldThread.getNumber4xxMessages());
+                System.out.println("Thread " + ldThread.getThreadName() + " Total number of 5xx responses: " + ldThread.getNumber5xxMessages());
+                System.out.println("Thread " + ldThread.getThreadName() + " Total number of other responses: " + ldThread.getNumberOtherMessages());
+                System.out.println("Thread " + ldThread.getThreadName() + " Minimum latency MS (rounded): " + ldThread.getMinLatencyMS());
+                System.out.println("Thread " + ldThread.getThreadName() + " Maximum latency MS (rounded): " + ldThread.getMaxLatencyMS());
+                System.out.println("Thread " + ldThread.getThreadName() + " Average latency MS (rounded): " + ldThread.getAvgLatencyMS());
             }
         }
 
@@ -242,20 +251,20 @@ public class App
             report.put("LoadTestParams", loadTestParams);
 
             Map<String, Map<String, String>> threadMessages = new HashMap<String, Map<String, String>>();
-            long crtThreadNumber = 0; //iterate until connections
+            long crtThreadNumber = 1; //iterate until connections
             for (LoadGeneratorThread ldThread: threadList){
                 Map<String, String> crtThread = new HashMap<String, String>();
 
-                crtThread.put(ldThread.getName() + "-TotalMessages" , String.valueOf(ldThread.getNumberOfMessages()));
-                crtThread.put(ldThread.getName() + "-Total1xxResponses" , String.valueOf(ldThread.getNumber1xxMessages()));
-                crtThread.put(ldThread.getName() + "-Total2xxResponses" , String.valueOf(ldThread.getNumber2xxMessages()));
-                crtThread.put(ldThread.getName() + "-Total3xxResponses" , String.valueOf(ldThread.getNumber3xxMessages()));
-                crtThread.put(ldThread.getName() + "-Total4xxResponses" , String.valueOf(ldThread.getNumber4xxMessages()));
-                crtThread.put(ldThread.getName() + "-Total5xxResponses" , String.valueOf(ldThread.getNumber5xxMessages()));
-                crtThread.put(ldThread.getName() + "-TotalOtherResponses" , String.valueOf(ldThread.getNumberOtherMessages()));
-                crtThread.put(ldThread.getName() + "-MinLatencyMSRounded" , String.valueOf(ldThread.getMinLatencyMS()));
-                crtThread.put(ldThread.getName() + "-MaxLatencyMSRounded" , String.valueOf(ldThread.getMaxLatencyMS()));
-                crtThread.put(ldThread.getName() + "-AvgLatencyMSRounded" , String.valueOf(ldThread.getAvgLatencyMS()));
+                crtThread.put(ldThread.getThreadName() + "-TotalMessages" , String.valueOf(ldThread.getNumberOfMessages()));
+                crtThread.put(ldThread.getThreadName() + "-Total1xxResponses" , String.valueOf(ldThread.getNumber1xxMessages()));
+                crtThread.put(ldThread.getThreadName() + "-Total2xxResponses" , String.valueOf(ldThread.getNumber2xxMessages()));
+                crtThread.put(ldThread.getThreadName() + "-Total3xxResponses" , String.valueOf(ldThread.getNumber3xxMessages()));
+                crtThread.put(ldThread.getThreadName() + "-Total4xxResponses" , String.valueOf(ldThread.getNumber4xxMessages()));
+                crtThread.put(ldThread.getThreadName() + "-Total5xxResponses" , String.valueOf(ldThread.getNumber5xxMessages()));
+                crtThread.put(ldThread.getThreadName() + "-TotalOtherResponses" , String.valueOf(ldThread.getNumberOtherMessages()));
+                crtThread.put(ldThread.getThreadName() + "-MinLatencyMSRounded" , String.valueOf(ldThread.getMinLatencyMS()));
+                crtThread.put(ldThread.getThreadName() + "-MaxLatencyMSRounded" , String.valueOf(ldThread.getMaxLatencyMS()));
+                crtThread.put(ldThread.getThreadName() + "-AvgLatencyMSRounded" , String.valueOf(ldThread.getAvgLatencyMS()));
 
                 threadMessages.put("Thread-" + crtThreadNumber, crtThread);
                 crtThreadNumber += 1;
