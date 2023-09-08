@@ -103,6 +103,22 @@ public class LoadGeneratorThread extends Thread {
         boolean randReqMode = Boolean.valueOf(envMap.get("RANDREQMODE")).booleanValue();
         Random rand = new Random();
 
+        /*
+         * Declare the HttpClient outside of the main loop as we only want one instance of it.
+         * Opening multiple clients may lead to running out of stack memory and thus the app will behave as if crashed and the pod will not finish
+         * with the right return value which can lead to unexpected problems in the ecosystem.
+         */
+        HttpClient client = null; 
+        try{
+            client = HttpClient.newHttpClient();
+        } catch (Exception e){
+            if (App.TRACE){
+                System.out.println(threadName + ": Could not create HttpClient object. Bailing out!");
+                e.printStackTrace();
+            }
+            isCompleted = true;
+        }
+        
         while (System.currentTimeMillis() < end && !isCompleted) {
             try {
                 i++; //we increase the general counter here to compensate for STOPONERROR==True
@@ -139,7 +155,7 @@ public class LoadGeneratorThread extends Thread {
                 if (j >= reqPayloads)
                     j = 0;
 
-                HttpClient client = HttpClient.newHttpClient();
+                
                 long reqStart = System.currentTimeMillis();
                 HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
                 long reqEnd = System.currentTimeMillis();
@@ -170,27 +186,30 @@ public class LoadGeneratorThread extends Thread {
                 } else if (response.statusCode() >= 400 && response.statusCode() <= 499) {
                     number4xxMessages += 1;
                     if (stopOnError) {
-                        if (App.TRACE)
+                        if (App.TRACE){
                             System.out.println("StopOnError is active. Thread: " + threadName + "was interrupted by statusCode "
                                 + response.statusCode() + " at iteration " + Long.toString(i));
+                        }
                         break;
                     }
                 } else if (response.statusCode() >= 500 && response.statusCode() <= 599) {
                     number5xxMessages += 1;
                     if (stopOnError) {
-                        if (App.TRACE)
+                        if (App.TRACE){
                             System.out.println("StopOnError is active. Thread: " + threadName + "was interrupted by statusCode "
                                 + response.statusCode() + " at iteration " + Long.toString(i));
+                        }
                         break;
                     }
                 } else {
                     numberOtherMessages += 1;
                     if (stopOnError) {
-                        if (App.TRACE)                       
+                        if (App.TRACE) {                      
                             System.out.println("StopOnError is active. Thread: " + threadName + "was interrupted by statusCode "
                                 + response.statusCode() + " at iteration " + Long.toString(i));
+                        }
                         break;
-                    }
+                    }                    
                 }
             } catch (Exception e) {
                 if (e instanceof URISyntaxException) {
@@ -207,7 +226,9 @@ public class LoadGeneratorThread extends Thread {
                     if (stopOnError)
                         break;
                 } else {
-                    e.printStackTrace();
+                    if (App.TRACE){
+                        e.printStackTrace();
+                    }
                     isCompleted = true;
                     break;
                 }                
@@ -224,14 +245,16 @@ public class LoadGeneratorThread extends Thread {
                             + Long.toString(i));
                     }
                 } else {
-                    e.printStackTrace();
+                    if (App.TRACE){
+                        e.printStackTrace();
+                    }
                     isCompleted = true;
                     break;
                 }
             }
         }
         isCompleted = true;
-        numberOfMessages = i;
+        numberOfMessages = number1xxMessages + number2xxMessages + number3xxMessages + number4xxMessages + number5xxMessages + numberOtherMessages;
         if (App.TRACE)
             System.out.println("Thread " + threadName + " sent " + numberOfMessages + " messages.");
     }

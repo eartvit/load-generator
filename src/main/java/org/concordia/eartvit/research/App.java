@@ -77,39 +77,55 @@ public class App
 
         String startDateStr = dateFormatter.format(dateStart);
 
-        for (int i=0; i<connections; i++){
-            String threadName="Thread-"+String.valueOf(i+1);
-            LoadGeneratorThread ldThread = new LoadGeneratorThread(threadName, environment);
-            threadList.add(ldThread);
-            ldThread.start();
-            /*
-            try{
-                ldThread.join();
-            }
-            catch (InterruptedException e){
+        try {
+            for (int i=0; i<connections; i++){
+                String threadName="Thread-"+String.valueOf(i+1);
+                LoadGeneratorThread ldThread = new LoadGeneratorThread(threadName, environment);
+                ldThread.start();
+                threadList.add(ldThread);
+            }            
+        } catch (Exception e) {
+            if (App.TRACE){
+                System.out.println("Exception caught starting thread");
                 e.printStackTrace();
             }
-            */
+            
         }
+
+        if (App.TRACE){
+            System.out.println("Created " + threadList.size() + " threads out of " + connections + " requested.");
+        }
+
         boolean allThreadsCompleted = false;
         long now = System.currentTimeMillis();
         int duration = Integer.valueOf(environment.get("DURATION"));
         long end = now + 2000 * duration; //wait twice the duration then force exit
-        while (!allThreadsCompleted ){
-            allThreadsCompleted = true;
-            for (LoadGeneratorThread ldThread: threadList){
-                allThreadsCompleted = allThreadsCompleted && ldThread.isCompleted();
-            }
-            try{
-                Thread.sleep(100);
-            } catch (InterruptedException e){
-                e.printStackTrace();
-            }
-            if (System.currentTimeMillis() > end){
-                System.out.println("Forcing stop as time limit exceeds 2xDURATION.");
+
+        try{
+            while (!allThreadsCompleted ){
+                allThreadsCompleted = true;
                 for (LoadGeneratorThread ldThread: threadList){
-                    ldThread.setCompleted(true);
+                    allThreadsCompleted = allThreadsCompleted && ldThread.isCompleted();
                 }
+                if (System.currentTimeMillis() > end){
+                    if (App.TRACE){
+                        System.out.println("Forcing stop as time limit exceeds 2xDURATION.");
+                    }
+                    for (LoadGeneratorThread ldThread: threadList){
+                        ldThread.setCompleted(true);
+                    }
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e){
+                    if (App.TRACE){
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e){
+            if (App.TRACE){
+                e.printStackTrace();
             }
         }
         Date dateStop = new Date(System.currentTimeMillis()); 
@@ -170,7 +186,8 @@ public class App
             System.out.println("Average latency MS (rounded): " + avgLatency);
 
             System.out.println("Timeout seconds:" + String.valueOf(environment.get("TIMEOUTSECONDS")));
-            System.out.println("Connections:" + String.valueOf(environment.get("CONNECTIONS")));
+            System.out.println("RequestedConnections:" + String.valueOf(environment.get("CONNECTIONS")));
+            System.out.println("Connections:" + String.valueOf(threadList.size()));
             System.out.println("Duration (seconds):" + String.valueOf(environment.get("DURATION")));
             System.out.println("ThreadSleepMS:" + String.valueOf(environment.get("THREADSLEEPMS")));
             System.out.println("RandomPayload:" + String.valueOf(environment.get("RANDPAYLOAD")));
@@ -227,7 +244,8 @@ public class App
 
             Map<String, String> loadTestParams = new HashMap<String, String>();
             loadTestParams.put("ReqTimeoutSeconds", String.valueOf(environment.get("TIMEOUTSECONDS")));
-            loadTestParams.put("Connections", String.valueOf(environment.get("CONNECTIONS")));
+            loadTestParams.put("RequestedConnections", String.valueOf(environment.get("CONNECTIONS")));
+            loadTestParams.put("Connections", String.valueOf(threadList.size()));
             loadTestParams.put("LoadDurationSeconds", String.valueOf(environment.get("DURATION")));
             loadTestParams.put("ThreadSleepMS", String.valueOf(environment.get("THREADSLEEPMS")));
             loadTestParams.put("RandomPayload", String.valueOf(environment.get("RANDPAYLOAD")));

@@ -3,26 +3,30 @@ FROM registry.access.redhat.com/ubi8/openjdk-17-runtime
 COPY ./target/load-generator-1.0-SNAPSHOT-jar-with-dependencies.jar load-generator-1.0-SNAPSHOT-jar-with-dependencies.jar
 
 # Define ENV defaults
-# Turn off app tracing
-ENV TRACEACTIVE="False"
-# Number of concurrent connections
-ENV CONNECTIONS=5
-# Load test duration in seconds
-ENV DURATION=30 
-# Load testing target endpoint URL
-ENV ENDPOINT="http://wiremock.demo.apps.svc.local:8080/mock"
-# Output report format: silent, text or json
-ENV OUTPUT="json"
-# Stop or not on errors
-ENV STOPONERROR="True"
-# Thread sleep ms
-ENV THREADSLEEPMS=50
-# Random request mode, meaning that the request payloads will be randomly selected from the pool, instead of in cyclic fashion
-ENV RANDREQMODE="True"
-# Random payload. If not each payload must be provided as JSON value, e.g. ENV PAYLOAD[n]="{Content: Message}"
-ENV RANDPAYLOAD="True"
-# If RANDPAYLOAD=True then PAYLOADSIZES must be provided as comma separated values
-ENV PAYLOADSIZES="50,150,250"
+ENV TRACEACTIVE="False" \
+    CONNECTIONS=5 \
+    DURATION=30 \
+    ENDPOINT="http://wiremock.demo.apps.svc.local:8080/mock" \
+    OUTPUT="json" \
+    STOPONERROR="True" \
+    THREADSLEEPMS=50 \
+    RANDREQMODE="True" \
+    RANDPAYLOAD="True" \
+    PAYLOADSIZES="50,150,250" \
+    LTREQPAYLOADSIZEFACTOR=10 \
+    LTREQFIRSTSIZEONLY="False" \
+    HEADERS="{'Authorization': 'Bearer YourAccessToken'}"
+
+# Turn off app tracing TRACEACTIVE="False"
+# Number of concurrent connections CONNECTIONS=5
+# Load test duration in seconds DURATION=30 
+# Load testing target endpoint URL ENDPOINT="http://wiremock.demo.apps.svc.local:8080/mock"
+# Output report format: silent, text or json OUTPUT="json"
+# Stop or not on errors STOPONERROR="True"
+# Thread sleep ms THREADSLEEPMS=50
+# Random request mode, meaning that the request payloads will be randomly selected from the pool, instead of in cyclic fashion RANDREQMODE="True"
+# Random payload. If not each payload must be provided as JSON value, e.g. ENV PAYLOAD[n]="{Content: Message}"; RANDPAYLOAD="True"
+# If RANDPAYLOAD=True then PAYLOADSIZES must be provided as comma separated values: PAYLOADSIZES="50,150,250"
 # Otherwise the payloads must be provided as JSON strings, e.g., ENV PAYLOAD[n]="{Content: Message}"
 # ENV PAYLOAD1="{Content: Message one}"
 # ENV PAYLOAD2="{Content: Message two}"
@@ -31,12 +35,12 @@ ENV PAYLOADSIZES="50,150,250"
 # ENV REQPAYLOADS=3
 
 # If RANDOMPAYLOAD=True then LTREQPAYLOADSIZEFACTOR defines the ratio between the sent payload and the one expected to be received from the PAYLOADSIZES list.
-ENV LTREQPAYLOADSIZEFACTOR=10
+#ENV LTREQPAYLOADSIZEFACTOR=10
 
 # If RANDOMPAYLOAD=True then LTREQFIRSTSIZEONLY defines if only one payload size to be used in the sent request for the list of expected PAYLOADSIZES to receive.
-ENV LTREQFIRSTSIZEONLY="False"
+#ENV LTREQFIRSTSIZEONLY="False"
 
 # Provide additional headers if needed for the HttpRequest towards the target endpoint.
-ENV HEADERS="{'Authorization': 'Bearer YourAccessToken'}"
+#ENV HEADERS="{'Authorization': 'Bearer YourAccessToken'}"
 
-CMD java -jar load-generator-1.0-SNAPSHOT-jar-with-dependencies.jar
+CMD java -Xms512m -Xmx3584m -Xss64m -jar load-generator-1.0-SNAPSHOT-jar-with-dependencies.jar
