@@ -641,13 +641,13 @@ public class App
                 spikeMessageStats.put("TotalSpikeOtherResponses", String.valueOf(totalSpikeOtherMessages));
                 spikeMessageStats.put("AvgSpikeLatencyMSRounded", String.valueOf(avgSpikeLatency));
 
-                spikeMessageStats.put("SpikeConnections: ", String.valueOf(environment.get("SPIKECONNECTIONS")));
-                spikeMessageStats.put("SpikeDurationLowerBound: ", String.valueOf(environment.get("SPIKEDURATIONLOWERBOUND")));
-                spikeMessageStats.put("SpikeDurationUpperBound: ", String.valueOf(environment.get("SPIKEDURATIONUPPERBOUND")));
-                spikeMessageStats.put("RandomSpikeDuration: ", String.valueOf(randomSpikeDuration));
-                spikeMessageStats.put("RandomSpikeRepeat: ", String.valueOf(randomSpikeStart));
-                spikeMessageStats.put("SpikeRepetitionLowerBound: ", String.valueOf(environment.get("SPIKEREPETITIONINTLOBOUND")));
-                spikeMessageStats.put("SpikeRepetitionUpperBound: ", String.valueOf(environment.get("SPIKEREPETITIONINTHIBOUND")));
+                spikeMessageStats.put("SpikeConnections", String.valueOf(environment.get("SPIKECONNECTIONS")));
+                spikeMessageStats.put("SpikeDurationLowerBound", String.valueOf(environment.get("SPIKEDURATIONLOWERBOUND")));
+                spikeMessageStats.put("SpikeDurationUpperBound", String.valueOf(environment.get("SPIKEDURATIONUPPERBOUND")));
+                spikeMessageStats.put("RandomSpikeDuration", String.valueOf(randomSpikeDuration));
+                spikeMessageStats.put("RandomSpikeRepeat", String.valueOf(randomSpikeStart));
+                spikeMessageStats.put("SpikeRepetitionLowerBound", String.valueOf(environment.get("SPIKEREPETITIONINTLOBOUND")));
+                spikeMessageStats.put("SpikeRepetitionUpperBound", String.valueOf(environment.get("SPIKEREPETITIONINTHIBOUND")));
 
                 report.put("SpikeMessageStats", spikeMessageStats);
             }            
