@@ -33,10 +33,25 @@ public class LoadGeneratorThread extends Thread {
     private long avgLatencyMS = 0;
     private long cumulativeLatency = 0;
 
+    private boolean isSpikingThread = false;
+    private long duration = 0;
+    private long threadSleepMS = 50;
+    private boolean spikeActive = false;
+
+    HttpClient client = null; 
+
 
     public LoadGeneratorThread(String threadName, Map<String, String> envMap) {
         this.threadName = threadName;
         this.envMap = envMap;
+        this.isSpikingThread = false;
+    }
+
+    public LoadGeneratorThread(String threadName, Map<String, String> envMap, boolean isSpikingThread, boolean spikeActive) {
+        this.threadName = threadName;
+        this.envMap = envMap;
+        this.isSpikingThread = isSpikingThread;
+        this.spikeActive = spikeActive;
     }
 
     public void start() {
@@ -48,8 +63,8 @@ public class LoadGeneratorThread extends Thread {
 
     public void run() {
 
-        int duration = Integer.valueOf(envMap.get("DURATION"));
-        int threadSleepMS = Integer.valueOf(envMap.get("THREADSLEEPMS"));
+        duration = Long.valueOf(envMap.get("DURATION"));
+        threadSleepMS = Long.valueOf(envMap.get("THREADSLEEPMS"));
         timeoutSeconds = Long.valueOf(envMap.get("TIMEOUTSECONDS"));
 
         long now = System.currentTimeMillis();
@@ -103,12 +118,6 @@ public class LoadGeneratorThread extends Thread {
         boolean randReqMode = Boolean.valueOf(envMap.get("RANDREQMODE")).booleanValue();
         Random rand = new Random();
 
-        /*
-         * Declare the HttpClient outside of the main loop as we only want one instance of it.
-         * Opening multiple clients may lead to running out of stack memory and thus the app will behave as if crashed and the pod will not finish
-         * with the right return value which can lead to unexpected problems in the ecosystem.
-         */
-        HttpClient client = null; 
         try{
             client = HttpClient.newHttpClient();
         } catch (Exception e){
@@ -120,6 +129,32 @@ public class LoadGeneratorThread extends Thread {
         }
         
         while (System.currentTimeMillis() < end && !isCompleted) {
+            if (isSpikingThread && spikeActive == false){
+                if (App.TRACE){
+                    System.out.println(this.threadName + " is inactive. Checking for next active interval after 1000ms...");
+                }
+                try {
+                    Thread.sleep(1000);
+                    continue;//we check again spikeActive which is updated by the main thread
+                } catch (Exception e) {
+                    if (e instanceof InterruptedException){
+                        if (App.TRACE){
+                            System.out.println("Thread: " + threadName + "caught an InterruptedException at iteration "
+                                + Long.toString(i));
+                        }
+                        if (stopOnError){
+                            isCompleted = true;
+                            break;
+                        }
+                    } else {
+                        if (App.TRACE){
+                            e.printStackTrace();
+                        }
+                        isCompleted = true;
+                        break;
+                    }
+                }
+            }
             try {
                 i++; //we increase the general counter here to compensate for STOPONERROR==True
                 if (randReqMode == true) {
@@ -154,7 +189,6 @@ public class LoadGeneratorThread extends Thread {
                 j += 1;
                 if (j >= reqPayloads)
                     j = 0;
-
                 
                 long reqStart = System.currentTimeMillis();
                 HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
@@ -217,11 +251,13 @@ public class LoadGeneratorThread extends Thread {
                         System.out.println("Thread: " + threadName + "was interrupted by URISyntaxException at iteration "
                             + Long.toString(i));
                     }
+                    isCompleted = true;
                     break; //we always stop on malformed URI
                 } else if (e instanceof HttpTimeoutException) {
                     numberOtherMessages += 1; //probably request timed out
                     if (App.TRACE){
-                        e.printStackTrace();
+                        System.out.println(threadName + " Request timed out at iteration "+ Long.toString(i));
+                        //e.printStackTrace();
                     }
                     if (stopOnError)
                         break;
@@ -237,12 +273,12 @@ public class LoadGeneratorThread extends Thread {
                 Thread.sleep(threadSleepMS);
             } catch (Exception e) {
                 if (e instanceof InterruptedException){
+                    if (App.TRACE){
+                        System.out.println(threadName + "caught an InterruptedException at iteration "
+                            + Long.toString(i));
+                    }
                     if (stopOnError){
                         break;
-                    }
-                    if (App.TRACE){
-                        System.out.println("Thread: " + threadName + "was interrupted by InterruptedException at iteration "
-                            + Long.toString(i));
                     }
                 } else {
                     if (App.TRACE){
@@ -254,7 +290,7 @@ public class LoadGeneratorThread extends Thread {
             }
         }
         isCompleted = true;
-        numberOfMessages = number1xxMessages + number2xxMessages + number3xxMessages + number4xxMessages + number5xxMessages + numberOtherMessages;
+        
         if (App.TRACE)
             System.out.println("Thread " + threadName + " sent " + numberOfMessages + " messages.");
     }
@@ -272,6 +308,7 @@ public class LoadGeneratorThread extends Thread {
     }
 
     public long getNumberOfMessages() {
+        numberOfMessages = number1xxMessages + number2xxMessages + number3xxMessages + number4xxMessages + number5xxMessages + numberOtherMessages;
         return numberOfMessages;
     }
 
@@ -318,4 +355,41 @@ public class LoadGeneratorThread extends Thread {
     public long getCumulativeLatency() {
         return cumulativeLatency;
     }
+
+    public void setTimeoutSeconds(long timeoutSeconds) {
+        this.timeoutSeconds = timeoutSeconds;
+    }
+
+    public boolean isSpikingThread() {
+        return isSpikingThread;
+    }
+
+    public void setSpikingThread(boolean isSpikingThread) {
+        this.isSpikingThread = isSpikingThread;
+    }
+
+    public long getDuration() {
+        return duration;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+    }
+
+    public boolean getSpikeActive() {
+        return spikeActive;
+    }
+
+    public void setSpikeActive(boolean spikeActive) {
+        this.spikeActive = spikeActive;
+    }
+
+    public long getThreadSleepMS() {
+        return threadSleepMS;
+    }
+
+    public void setThreadSleepMS(long threadSleepMS) {
+        this.threadSleepMS = threadSleepMS;
+    }
+    
 }

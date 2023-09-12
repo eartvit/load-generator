@@ -8,8 +8,9 @@
 
 podman rm load-generator > /dev/null 2>&1
 
-podman run -d --name load-generator --net test -e TRACEACTIVE='True' -e CONNECTIONS=2 -e DURATION=5 \
-            -e ENDPOINT=http://wiremock-metrics2:8080/mock \
+podman run -d --name load-generator --net test -p 9092:9090 \
+            -e TRACEACTIVE='True' -e CONNECTIONS=2 -e DURATION=5 \
+            -e ENDPOINT=http://wiremock-metrics2:8080/mock -e PROMETHEUSPORT=9090 \
             -e OUTPUT='json' -e THREADSLEEPMS=50 -e STOPONERROR='False' -e RANDREQMODE='True' -e RANDPAYLOAD='False' \
             -e REQPAYLOADS=3 -e PAYLOAD1="{'content':'50'}" -e PAYLOAD2="{'content':'150'}" -e PAYLOAD3="{'content':'255'}" \
             localhost/load-generator:latest

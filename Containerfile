@@ -15,6 +15,8 @@ ENV TRACEACTIVE="False" \
     PAYLOADSIZES="50,150,250" \
     LTREQPAYLOADSIZEFACTOR=10 \
     LTREQFIRSTSIZEONLY="False" \
+    PROMETHEUSPORT=9090 \
+    CREATESPIKES="False" \
     HEADERS="{'Authorization': 'Bearer YourAccessToken'}"
 
 # Turn off app tracing TRACEACTIVE="False"
@@ -42,5 +44,14 @@ ENV TRACEACTIVE="False" \
 
 # Provide additional headers if needed for the HttpRequest towards the target endpoint.
 #ENV HEADERS="{'Authorization': 'Bearer YourAccessToken'}"
+
+# When creating spikes the following parameters are available to control the spikes:
+#ENV SPIKECONNECTIONS=2 \
+#    SPIKEDURATIONLOWERBOUND=1 \
+#    SPIKEDURATIONUPPERBOUND=5 \
+#    RANDOMSPIKEDURATION="True" \
+#    SPIKEREPETITIONINTLOBOUND=3 \
+#    SPIKEREPETITIONINTHIBOUND=6 \
+#    RANDOMSPIKEREPEAT="True"
 
 CMD java -Xms512m -Xmx3584m -Xss64m -jar load-generator-1.0-SNAPSHOT-jar-with-dependencies.jar
