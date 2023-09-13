@@ -75,7 +75,7 @@ public class App
                 .register();
         Gauge totalSpike2XXMessagesGauge = Gauge.build()
                 .name("load_generator_spike_2xx_msg")
-                .help("Total number of 2XX messages received back by the Load Generator")
+                .help("Total number of 2XX spike messages received back by the Load Generator")
                 .register();
         Gauge totalSpike3XXMessagesGauge = Gauge.build()
                 .name("load_generator_spike_3xx_msg")
@@ -93,8 +93,43 @@ public class App
                 .name("load_generator_spike_other_msg")
                 .help("Total number of other spike messages received back by the Load Generator")
                 .register();
+
+        Gauge totalSpikeCycleMessagesGauge = Gauge.build()
+                .name("load_generator_spike_cycle_total_msg")
+                .help("Total number of spike cycle messages received back by the Load Generator")
+                .register();    
+        Gauge totalSpikeCycle1XXMessagesGauge = Gauge.build()
+                .name("load_generator_spike_cycle_1xx_msg")
+                .help("Total number of 1XX spike cycle messages received back by the Load Generator")
+                .register();
+        Gauge totalSpikeCycle2XXMessagesGauge = Gauge.build()
+                .name("load_generator_spike_cycle_2xx_msg")
+                .help("Total number of 2XX spike cycle messages received back by the Load Generator")
+                .register();
+        Gauge totalSpikeCycle3XXMessagesGauge = Gauge.build()
+                .name("load_generator_spike_cycle_3xx_msg")
+                .help("Total number of 3XX spike cycle messages received back by the Load Generator")
+                .register();
+        Gauge totalSpikeCycle4XXMessagesGauge = Gauge.build()
+                .name("load_generator_spike_cycle_4xx_msg")
+                .help("Total number of 4XX spike cycle messages received back by the Load Generator")
+                .register();
+        Gauge totalSpikeCycle5XXMessagesGauge = Gauge.build()
+                .name("load_generator_spike_cycle_5xx_msg")
+                .help("Total number of 5XX spike cycle messages received back by the Load Generator")
+                .register();
+        Gauge totalSpikeCycleOtherMessagesGauge = Gauge.build()
+                .name("load_generator_spike_cycle_other_msg")
+                .help("Total number of other spike cycle messages received back by the Load Generator")
+                .register();
+        
         Gauge averageSpikeLatencyGauge = Gauge.build()
                 .name("load_generator_spike_avg_latency_ms")
+                .help("Average spike latency for the total spike messages received back by the Load Generator")
+                .register();
+
+        Gauge averageSpikeCycleLatencyGauge = Gauge.build()
+                .name("load_generator_spike_cycle_avg_latency_ms")
                 .help("Average spike latency for the total spike messages received back by the Load Generator")
                 .register();
 
@@ -111,17 +146,19 @@ public class App
 
         environment.put("CONNECTIONS", System.getenv().getOrDefault("CONNECTIONS", "2"));
         environment.put("TIMEOUTSECONDS", System.getenv().getOrDefault("TIMEOUTSECONDS", "2"));
-        environment.put("DURATION", System.getenv().getOrDefault("DURATION", "10"));
+        long httpTimeoutMS = 1000* Long.valueOf(environment.get("TIMEOUTSECONDS"));
+
+        environment.put("DURATION", System.getenv().getOrDefault("DURATION", "15"));
         environment.put("ENDPOINT", System.getenv().getOrDefault("ENDPOINT", "http://localhost:8080/mock"));
         environment.put("THREADSLEEPMS", System.getenv().getOrDefault("THREADSLEEPMS", "50"));
         environment.put("HEADERS", System.getenv().getOrDefault("HEADERS", "{\"Authorization\":\"Bearer YourAccessToken\"}"));
 
-        environment.put("CREATESPIKES", System.getenv().getOrDefault("CREATESPIKES", "False"));
-        environment.put("SPIKECONNECTIONS", System.getenv().getOrDefault("SPIKECONNECTIONS", "5"));
+        environment.put("CREATESPIKES", System.getenv().getOrDefault("CREATESPIKES", "True"));
+        environment.put("SPIKECONNECTIONS", System.getenv().getOrDefault("SPIKECONNECTIONS", "2"));
         environment.put("SPIKEDURATIONLOWERBOUND", System.getenv().getOrDefault("SPIKEDURATIONLOWERBOUND", "2"));
-        environment.put("SPIKEDURATIONUPPERBOUND", System.getenv().getOrDefault("SPIKEDURATIONUPPERBOUND", "5"));
+        environment.put("SPIKEDURATIONUPPERBOUND", System.getenv().getOrDefault("SPIKEDURATIONUPPERBOUND", "3"));
         environment.put("RANDOMSPIKEDURATION", System.getenv().getOrDefault("RANDOMSPIKEDURATION", "False"));
-        environment.put("SPIKEREPETITIONINTLOBOUND", System.getenv().getOrDefault("SPIKEREPETITIONINTLOBOUND", "2"));
+        environment.put("SPIKEREPETITIONINTLOBOUND", System.getenv().getOrDefault("SPIKEREPETITIONINTLOBOUND", "3"));
         environment.put("SPIKEREPETITIONINTHIBOUND", System.getenv().getOrDefault("SPIKEREPETITIONINTHIBOUND", "4"));
         environment.put("RANDOMSPIKEREPEAT", System.getenv().getOrDefault("RANDOMSPIKEREPEAT", "False"));
 
@@ -283,6 +320,18 @@ public class App
                         for (LoadGeneratorThread ldThread: spikeThreadList){
                             ldThread.setSpikeActive(false); // we tell the spikeThreads to skip over the main loop
                         }
+                        /* 
+                        try {
+                            if (App.TRACE){
+                                System.out.println("Main thread will sleep for " + httpTimeoutMS/1000 + " seconds to allow spike threads to complete the loop");
+                            }
+                            Thread.sleep(httpTimeoutMS); // we pause the main thread to allow the spikethreads to complete the current cycle                        
+                        } catch (Exception e) {
+                            if (App.TRACE){
+                                System.out.println("Main thread failed to sleep httpTimeoutMS when deactivating looping spike threads");
+                            }
+                        }
+                        */
                         spikesAreActive = false;
 
                         if (randomSpikeStart){
@@ -316,13 +365,23 @@ public class App
                             ldThread.setCompleted(true);
                         }
                     }
+                    try {
+                        if (App.TRACE){
+                            System.out.println("Main thread will sleep for " + httpTimeoutMS/1000 + " seconds to allow all threads to complete at 2*end.");
+                        }
+                        Thread.sleep(httpTimeoutMS); //give the chance the threads to complete
+                    } catch (Exception e) {
+                        if (App.TRACE){
+                            System.out.println("Main thread failed to sleep httpTimeoutMS when deactivating all threads at 2*end");
+                        }
+                    }
                 }
                 try {
-                    // Update Prometheus counters
+                    // Update Prometheus Gauges
                     double crtSystemLoadAverage = osBean.getSystemLoadAverage();
                     systemLoadAverage.set(crtSystemLoadAverage);
 
-                    // Update regular load message gauges
+                    // Update regular load message Gauges
                     long totalMessages = 0;
                     long total1xxMessages = 0;
                     long total2xxMessages = 0;
@@ -330,8 +389,6 @@ public class App
                     long total4xxMessages = 0;
                     long total5xxMessages = 0;
                     long totalOtherMessages = 0;
-                    long minLatency = Long.MAX_VALUE;
-                    long maxLatency = 0;
                     long cumulativeLatency = 0;
                     long avgLatency = 0;
 
@@ -344,9 +401,12 @@ public class App
                         total5xxMessages += ldThread.getNumber5xxMessages();
                         totalOtherMessages += ldThread.getNumberOtherMessages();
                         cumulativeLatency += ldThread.getCumulativeLatency();
+                        if(App.TRACE){
+                            ldThread.printOut();
+                        }
                     }
                     if (totalMessages == 0)
-                        avgLatency = (minLatency + maxLatency)/2;
+                        avgLatency = 0;
                     else
                         avgLatency = cumulativeLatency / totalMessages;
                     
@@ -360,7 +420,7 @@ public class App
                     averageLatencyGauge.set(avgLatency);
 
                     if (createSpikes){
-                        // Update spike message gauges
+                        // Update spike message Gauges
                         long totalSpikeMessages = 0;
                         long totalSpike1xxMessages = 0;
                         long totalSpike2xxMessages = 0;
@@ -368,10 +428,18 @@ public class App
                         long totalSpike4xxMessages = 0;
                         long totalSpike5xxMessages = 0;
                         long totalSpikeOtherMessages = 0;
-                        long minSpikeLatency = Long.MAX_VALUE;
-                        long maxSpikeLatency = 0;
                         long cumulativeSpikeLatency = 0;
                         long avgSpikeLatency = 0;
+
+                        long totalSpikeCycleMessages = 0;
+                        long totalSpikeCycle1xxMessages = 0;
+                        long totalSpikeCycle2xxMessages = 0;
+                        long totalSpikeCycle3xxMessages = 0;
+                        long totalSpikeCycle4xxMessages = 0;
+                        long totalSpikeCycle5xxMessages = 0;
+                        long totalSpikeCycleOtherMessages = 0;
+                        long cumulativeSpikeCycleLatency = 0;
+                        long avgSpikeCycleLatency = 0;
 
                         for (LoadGeneratorThread ldThread: spikeThreadList){
                             totalSpikeMessages += ldThread.getNumberOfMessages();
@@ -382,12 +450,31 @@ public class App
                             totalSpike5xxMessages += ldThread.getNumber5xxMessages();
                             totalSpikeOtherMessages += ldThread.getNumberOtherMessages();
                             cumulativeSpikeLatency += ldThread.getCumulativeLatency();
+
+                            totalSpikeCycleMessages += ldThread.getSpikeCycleNumberOfMessages();
+                            totalSpikeCycle1xxMessages += ldThread.getSpikeCycleNumber1xxMessages();
+                            totalSpikeCycle2xxMessages += ldThread.getSpikeCycleNumber2xxMessages();
+                            totalSpikeCycle3xxMessages += ldThread.getSpikeCycleNumber3xxMessages();
+                            totalSpikeCycle4xxMessages += ldThread.getSpikeCycleNumber4xxMessages();
+                            totalSpikeCycle5xxMessages += ldThread.getSpikeCycleNumber5xxMessages();
+                            totalSpikeCycleOtherMessages += ldThread.getSpikeCycleNumberOtherMessages();
+                            cumulativeSpikeCycleLatency += ldThread.getSpikeCycleCumulativeLatency();
+
+                            if(App.TRACE){
+                                ldThread.printOut();
+                            }
                         }
+
                         if (totalSpikeMessages == 0)
-                            avgSpikeLatency = (minSpikeLatency + maxSpikeLatency)/2;
+                            avgSpikeLatency = 0;
                         else
                             avgSpikeLatency = cumulativeSpikeLatency / totalSpikeMessages;
-                        
+
+                        if (totalSpikeCycleMessages == 0)
+                            avgSpikeCycleLatency = 0;
+                        else
+                            avgSpikeCycleLatency = cumulativeSpikeCycleLatency / totalSpikeCycleMessages;
+                            
                         totalSpikeMessagesGauge.set(totalSpikeMessages);
                         totalSpike1XXMessagesGauge.set(totalSpike1xxMessages);
                         totalSpike2XXMessagesGauge.set(totalSpike2xxMessages);
@@ -396,9 +483,21 @@ public class App
                         totalSpike5XXMessagesGauge.set(totalSpike5xxMessages);
                         totalSpikeOtherMessagesGauge.set(totalSpikeOtherMessages);
                         averageSpikeLatencyGauge.set(avgSpikeLatency);
-                    }
 
-                    Thread.sleep(1000);
+                        totalSpikeCycle1XXMessagesGauge.set(totalSpikeCycle1xxMessages);
+                        totalSpikeCycle2XXMessagesGauge.set(totalSpikeCycle2xxMessages);
+                        totalSpikeCycle3XXMessagesGauge.set(totalSpikeCycle3xxMessages);
+                        totalSpikeCycle4XXMessagesGauge.set(totalSpikeCycle4xxMessages);
+                        totalSpikeCycle5XXMessagesGauge.set(totalSpikeCycle5xxMessages);
+                        totalSpikeCycleOtherMessagesGauge.set(totalSpikeCycleOtherMessages);
+                        totalSpikeCycleMessagesGauge.set(totalSpikeCycleMessages);
+                        averageSpikeCycleLatencyGauge.set(avgSpikeCycleLatency);
+                    }
+                    if (System.currentTimeMillis() > end) {
+                        break;
+                    } else {
+                        Thread.sleep(1000);
+                    }                 
                 } catch (InterruptedException e){
                     if (App.TRACE){
                         e.printStackTrace();
@@ -493,7 +592,7 @@ public class App
 
             System.out.println("CreateSpikes:" + String.valueOf(environment.get("CREATESPIKES")));  
             if (createSpikes){
-                // Update spike message gauges
+                // Update spike message Gauges
                 long totalSpikeMessages = 0;
                 long totalSpike1xxMessages = 0;
                 long totalSpike2xxMessages = 0;
@@ -603,7 +702,7 @@ public class App
             report.put("LoadTestParams", loadTestParams);
 
             if (createSpikes){
-                // Update spike message gauges
+                // Update spike message Gauges
                 long totalSpikeMessages = 0;
                 long totalSpike1xxMessages = 0;
                 long totalSpike2xxMessages = 0;
