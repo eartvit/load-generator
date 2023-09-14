@@ -320,7 +320,7 @@ public class LoadGeneratorThread extends Thread {
                 }
             }
         }
-        
+        setCompleted(true);
         if (App.TRACE)
             System.out.println("Thread " + threadName + " sent " + getNumberOfMessages() + " messages.");
     }
