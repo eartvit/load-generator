@@ -190,6 +190,7 @@ public class App
         else {
             // Branch for manually defined payloads to send
             // LTREQPAYLOADSIZEFACTOR and LTREQFIRSTSIZEONLY are not used in this branch
+            environment.put("LTREQFIRSTSIZEONLY","False");
             environment.put("REQPAYLOADS", System.getenv().getOrDefault("REQPAYLOADS", "3"));
             for (int i =0; i< Integer.parseInt(environment.get("REQPAYLOADS")); i++ ){
                 environment.put("PAYLOAD"+String.valueOf(i+1), System.getenv().getOrDefault("PAYLOAD"+String.valueOf(i+1), "{\"content\":\"default\"}"));

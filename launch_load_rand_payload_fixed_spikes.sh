@@ -3,7 +3,7 @@
 # For testing purposes
 # Ensure you have a podman network called `test` and that has DNS enabled. You can create one with `podman network create test`
 # Then deploy the wiremock-metrics application as: `podman run -d --name wiremock-metrics2 --net test -p 8080:8080 quay.io/avitui/wiremock-metrics:v1`
-# Then build the app as container in your local store using `podman build -t load-generaror -f Containerfile`.
+# Then build the app as container in your local store using `podman build -t load-generator -f Containerfile`.
 # Once the build is completed you can use the launcher script.
 
 podman rm load-generator > /dev/null 2>&1
